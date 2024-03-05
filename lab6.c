@@ -136,8 +136,8 @@ void write(int *arr, int *bN, long long *mxN, long long *mnN, int *c) {
   
   long long prod = arr[0] * arr[1];
 
-  int sign1 = ~(arr[0] >> *bN) + 1;
-  int sign2 = ~(arr[1] >> *bN) + 1;
+  int sign1 = (arr[0] >> *bN);
+  int sign2 = (arr[1] >> *bN);
 
   // sign of number 1
   printf("sign0:%u\n", sign1);
@@ -147,6 +147,7 @@ void write(int *arr, int *bN, long long *mxN, long long *mnN, int *c) {
   if (sign1 == 0 && sign2 == 0 || sign1 == 1 && sign2 == 1) {
     printf("%x\t%x\n", *mxN, (prod));
     prod = ((*mxN - prod) & (1 << *bN)) ? *mxN : prod;
+
   // Negative result, underflow risk
   } else {
     printf("%x\t%x\n", *mnN, ~(prod-1));
