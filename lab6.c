@@ -3,8 +3,9 @@
 
 // Function Definitions
 int* innitFiles(int *bitNum, int *ncount);
-void getMax(int *mxN, int *bN);
-void getMin(int *mnN, int *bN);
+void getMax(long long *mxN, int *bN);
+void getMin(long long *mnN, int *bN);
+void write(int *arr, int *bN, long long *mxN, long long *mnN, int *c);
 
 FILE *in;
 FILE *out;
@@ -24,8 +25,8 @@ int main(int argc, char *argv[]) {
 
   int count = 0, *cP;
   int bitNum = 0, *bP;
-  int maxN = 0, *mxN;
-  int minN = 0, *mnN; 
+  long long maxN = 0, *mxN;
+  long long minN = 0, *mnN; 
 
   cP = &count, bP = &bitNum; 
   mxN = &maxN, mnN = &minN;
@@ -39,10 +40,13 @@ int main(int argc, char *argv[]) {
 
   // Test stuff
   printf("%d %d\n", *bP, *cP);
-  for (int i = 0; i < *cP; i++) {
+  for (int i = 0; i != *cP; i++) {
     printf("%d ", numbers[i]);
   }
   printf("\n");
+
+  // Determine the output
+  write(numbers, bP, mxN, mnN, cP);
 
   return 0;
 }
@@ -92,11 +96,11 @@ int* innitFiles(int *bitNum, int *ncount) {
  * 
  * formula max = 2^(n-1) - 1, signed
 */
-void getMax(int *mxN, int *bN) {
+void getMax(long long *mxN, int *bN) {
   long long t = 1;
   int bNC = *bN - 1;
   while (bNC != 0) {
-    t *= 2;
+    t = t << 1;   // basically multiply by 2
     bNC--;
   }
   t--;
@@ -111,14 +115,43 @@ void getMax(int *mxN, int *bN) {
  * 
  * formula min = -2^(n-1), signed
 */
-void getMin(int *mnN, int *bN) {
+void getMin(long long *mnN, int *bN) {
   long long t = 1;
   int bNC = *bN - 1;
   while (bNC != 0) {
-    t *= 2;
+    t = t << 1;   // basically multiply by 2
     bNC--;
   }
   t*=-1;
   printf("%lld\n", t);
   *mnN = t;
+}
+
+void write(int *arr, int *bN, long long *mxN, long long *mnN, int *c) {
+  // Print bounds and hex values if there are no numbers
+  if (*c == 0) {
+    fprintf(out, "min: %lld\t0x%016llx\nmax: %lld\t0x%016llx\n", *mnN, *mnN, *mxN, *mxN);
+    return;
+  } 
+  
+  long long prod = arr[0] * arr[1];
+
+  int sign1 = ~(arr[0] >> *bN) + 1;
+  int sign2 = ~(arr[1] >> *bN) + 1;
+
+  // sign of number 1
+  printf("sign0:%u\n", sign1);
+  printf("sign1:%u\n", sign2);
+
+  // Positive result, overflow risk
+  if (sign1 == 0 && sign2 == 0 || sign1 == 1 && sign2 == 1) {
+    printf("%x\t%x\n", *mxN, (prod));
+    prod = ((*mxN - prod) & (1 << *bN)) ? *mxN : prod;
+  // Negative result, underflow risk
+  } else {
+    printf("%x\t%x\n", *mnN, ~(prod-1));
+    prod = (~(prod-1) & *mnN) ? *mnN : prod;
+  } //    prod = (~(prod-1) & *mnN) ? *mnN : prod;
+
+  printf("prod%lld\n", prod);
 }
