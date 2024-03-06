@@ -1,11 +1,14 @@
+// A01372608
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 // Function Definitions
-int* innitFiles(int *bitNum, int *ncount);
-void getMax(unsigned long long *mxN, int *bN);
-void getMin(unsigned long long *mnN, int *bN);
-void write(int *arr, int *bN, long long *mxN, long long *mnN, int *c);
+long long* innitFiles(int *bitNum, int *ncount);
+void getMax(long long *mxN, int *bN);
+void getMin(long long *mnN, int *bN);
+void write(long long *arr, int *bN, long long *mxN, long long *mnN, int *c);
 
 FILE *in;
 FILE *out;
@@ -32,16 +35,16 @@ int main(int argc, char *argv[]) {
   mxN = &maxN, mnN = &minN;
 
   // Read file, get bits and numbers
-  int *numbers = innitFiles(bP, cP);
+  long long *numbers = innitFiles(bP, cP);
 
   // Calculate max and min
   getMax(mxN, bP);
   getMin(mnN, bP);
 
   // Test stuff
-  printf("%d %d\n", *bP, *cP);
+  printf("%lld %d\n", *bP, *cP);
   for (int i = 0; i != *cP; i++) {
-    printf("%d ", numbers[i]);
+    printf("%lld ", numbers[i]);
   }
   printf("\n");
 
@@ -57,7 +60,7 @@ int main(int argc, char *argv[]) {
  * param *ncount:   the number of numbers
  * returns:         *arr to the numbers
 */
-int* innitFiles(int *bitNum, int *ncount) {
+long long* innitFiles(int *bitNum, int *ncount) {
   char check = 0;
 
   // Determine the number of numbers
@@ -69,19 +72,19 @@ int* innitFiles(int *bitNum, int *ncount) {
   *ncount = (*ncount - 1);
 
   // Create array that stores the particles
-  int *arr = malloc(*ncount * sizeof(int));
+  long long *arr = malloc(*ncount * sizeof(long long));
 
   // set buffer back to the beginning
-  char buff[10];
+  char buff[100];
   fseek(in, 0, SEEK_SET);
-  fgets(buff, 10, in);
+  fgets(buff, 100, in);
   sscanf(buff, "%d", bitNum);
   int sCount = 0;
 
   // Get the numbers
-  while (fgets(buff, 10, in) != NULL) {
-    int tempN = 0;
-    if (sscanf(buff, "%d", &tempN) != EOF) {
+  while (fgets(buff, 100, in) != NULL) {
+    long long tempN = 0;
+    if (sscanf(buff, "%lld", &tempN) != EOF) {
       arr[sCount++] = tempN;
     }
   }
@@ -96,7 +99,7 @@ int* innitFiles(int *bitNum, int *ncount) {
  * 
  * formula max = 2^(n-1) - 1, signed
 */
-void getMax(unsigned long long *mxN, int *bN) {
+void getMax(long long *mxN, int *bN) {
   long long t = 1;
   int bNC = *bN - 1;
   while (bNC != 0) {
@@ -115,7 +118,7 @@ void getMax(unsigned long long *mxN, int *bN) {
  * 
  * formula min = -2^(n-1), signed
 */
-void getMin(unsigned long long *mnN, int *bN) {
+void getMin(long long *mnN, int *bN) {
   long long t = 1;
   int bNC = *bN - 1;
   while (bNC != 0) {
@@ -127,35 +130,54 @@ void getMin(unsigned long long *mnN, int *bN) {
   *mnN = t;
 }
 
-void write(int *arr, int *bN, long long *mxN, long long *mnN, int *c) {
+long long abs_val(long long x) {
+    long long mask = x >> (sizeof(long long) * 8 - 1);
+    return (x ^ mask) - mask;
+}
+
+void write(long long *arr, int *bN, long long *mxN, long long *mnN, int *c) {
   // Print bounds and hex values if there are no numbers
+  // Not important to the calculation
   if (*c == 0) {
     fprintf(out, "min: %lld\t0x%016llx\nmax: %lld\t0x%016llx\n", *mnN, *mnN, *mxN, *mxN);
     return;
   } 
 
-  // Get sign bits
-  int sign1 = (arr[0] >> (sizeof(int) * 8)-1);
-  int sign2 = (arr[1] >> (sizeof(int) * 8)-1);
-
+  // Long long data size so that most bits are avaliable.
   long long prod = arr[0] * arr[1];
+  
+  // Get sign bits
+  int sign1 = ((arr[0] >> (sizeof(int) * 8)-1) & 1);
+  int sign2 = ((arr[1] >> (sizeof(int) * 8)-1) & 1);
 
   // sign of number 1
   printf("sign0:%u\n", sign1);
   printf("sign1:%u\n", sign2);
 
-  printf("prodNAT:%d\n", prod);
+  printf("prodNAT:%lld\n", prod);
 
   // Positive result, overflow risk
-  if (sign1 == 0 && sign2 == 0 || sign1 > 0 && sign2 > 0) {
-    printf("%lld\t%lld\n", *mxN, (prod));
-    prod = ((*mxN - prod) & (1 << *bN)) ? *mxN : prod;
+  if (sign1 == sign2) {
+    long long diff = prod - *mxN;
+    long long is_a_greater = ~(diff >> (sizeof(long long) * 8 - 1)) & 1;
+
+    printf("Is a greater? %lld\n", is_a_greater);
+
+    prod = (is_a_greater) ? *mxN : prod;
 
   // Negative result, underflow risk
   } else {
-    printf("%x\t%x\n", *mnN, ~(prod-1));
-    prod = (~(prod-1) & *mnN) ? *mnN : prod;
-  } //    prod = (~(prod-1) & *mnN) ? *mnN : prod;
+    long long a = abs_val(prod);
+    long long b = abs_val(*mnN);
 
-  printf("prod%lld\n", prod);
+    long long diff = a - b;
+    long long is_a_smaller = diff >> (sizeof(long long) * 8 - 1) & 1;
+
+    printf("Is a (abs) smaller? %lld\n", is_a_smaller);
+
+    prod = (is_a_smaller) ? prod : *mnN;
+
+  } 
+
+  printf("prod %lld\n", prod);
 }
