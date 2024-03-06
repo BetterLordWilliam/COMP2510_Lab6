@@ -3,8 +3,8 @@
 
 // Function Definitions
 int* innitFiles(int *bitNum, int *ncount);
-void getMax(long long *mxN, int *bN);
-void getMin(long long *mnN, int *bN);
+void getMax(unsigned long long *mxN, int *bN);
+void getMin(unsigned long long *mnN, int *bN);
 void write(int *arr, int *bN, long long *mxN, long long *mnN, int *c);
 
 FILE *in;
@@ -25,8 +25,8 @@ int main(int argc, char *argv[]) {
 
   int count = 0, *cP;
   int bitNum = 0, *bP;
-  long long maxN = 0, *mxN;
-  long long minN = 0, *mnN; 
+  unsigned long long maxN = 0, *mxN;
+  unsigned long long minN = 0, *mnN; 
 
   cP = &count, bP = &bitNum; 
   mxN = &maxN, mnN = &minN;
@@ -96,7 +96,7 @@ int* innitFiles(int *bitNum, int *ncount) {
  * 
  * formula max = 2^(n-1) - 1, signed
 */
-void getMax(long long *mxN, int *bN) {
+void getMax(unsigned long long *mxN, int *bN) {
   long long t = 1;
   int bNC = *bN - 1;
   while (bNC != 0) {
@@ -115,7 +115,7 @@ void getMax(long long *mxN, int *bN) {
  * 
  * formula min = -2^(n-1), signed
 */
-void getMin(long long *mnN, int *bN) {
+void getMin(unsigned long long *mnN, int *bN) {
   long long t = 1;
   int bNC = *bN - 1;
   while (bNC != 0) {
@@ -133,19 +133,22 @@ void write(int *arr, int *bN, long long *mxN, long long *mnN, int *c) {
     fprintf(out, "min: %lld\t0x%016llx\nmax: %lld\t0x%016llx\n", *mnN, *mnN, *mxN, *mxN);
     return;
   } 
-  
-  long long prod = arr[0] * arr[1];
 
-  int sign1 = (arr[0] >> *bN);
-  int sign2 = (arr[1] >> *bN);
+  // Get sign bits
+  int sign1 = (arr[0] >> (sizeof(int) * 8)-1);
+  int sign2 = (arr[1] >> (sizeof(int) * 8)-1);
+
+  long long prod = arr[0] * arr[1];
 
   // sign of number 1
   printf("sign0:%u\n", sign1);
   printf("sign1:%u\n", sign2);
 
+  printf("prodNAT:%d\n", prod);
+
   // Positive result, overflow risk
-  if (sign1 == 0 && sign2 == 0 || sign1 == 1 && sign2 == 1) {
-    printf("%x\t%x\n", *mxN, (prod));
+  if (sign1 == 0 && sign2 == 0 || sign1 > 0 && sign2 > 0) {
+    printf("%lld\t%lld\n", *mxN, (prod));
     prod = ((*mxN - prod) & (1 << *bN)) ? *mxN : prod;
 
   // Negative result, underflow risk
