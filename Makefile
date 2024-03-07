@@ -29,7 +29,6 @@ convert_output: $(OUTPUT)
 	tr -d '\r' < $(OUTPUT) > temp_file && mv temp_file $(OUTPUT)
 
 check: $(OUTPUT) $(REF)
-	$(tail -c1 ($REF)) != ""  && echo >> $(REF)
 	@diff -q $(OUTPUT) $(REF) > /dev/null; \
 	if [ $$? -eq 0 ]; then \
 		echo "Pass"; \
@@ -44,3 +43,4 @@ run: $(TARGET)
 # Rule to clean generated files
 clean:
 	rm -f $(TARGET)
+

@@ -1,2 +1,0 @@
-min: -128	0xffffffffffffff80
-max: 127	0x000000000000007f
