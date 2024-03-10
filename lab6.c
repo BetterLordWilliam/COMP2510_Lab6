@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 
 // Function Definitions
 long long* innitFiles(int *bitNum, int *ncount);
@@ -16,6 +15,7 @@ FILE *out;
 
 /**
  * main:            Drives the program.
+ *                  Assumes two operands are required.
  * param argc:      Argument count 
  * param *argv[]:   Arguments themselves 
 */
@@ -82,28 +82,40 @@ long long* innitFiles(int *bitNum, int *ncount) {
     }
   }
   *ncount = (*ncount - 1);
-  if (*ncount > 2) printErrorExit();    // Temporary placeholder for more than 2 numbers
 
   // Create array that stores the particles
   long long *arr = malloc(*ncount * sizeof(long long));
   if (arr == NULL)
     printErrorExit();
 
-  // set buffer back to the beginning
-  char buff[100];
+  
+  char buff[100];               // set buffer back to the beginning
   fseek(in, 0, SEEK_SET);
   fgets(buff, 100, in);
   sscanf(buff, "%d", bitNum);
   int sCount = 0;
 
+  // Make sure the bit num is in the valid range
+  if (*bitNum > 64 || *bitNum < 4)
+    printErrorExit();
+
   // Get the numbers
   // Chose to assume that they would not be 2
   while (fgets(buff, 100, in) != NULL) {
     long long tempN = 0;
-    if (sscanf(buff, "%lld", &tempN) != EOF && sCount < *ncount) {
+    int stat = sscanf(buff, "%lld\n", &tempN);    // Keep track of success
+
+    if (stat == 1 && sCount < *ncount) {
       arr[sCount++] = tempN;
+
+    } else {
+      *ncount = (*ncount - 1);
     }
   }
+  *ncount = (*ncount + 1);        // Reset after decrement of E
+
+  if (*ncount == 1) printErrorExit();   // Exit if only one operand is presented
+  if (*ncount > 2) printErrorExit();    // Exit if there are more than two operands
 
   return arr;
 }
@@ -154,7 +166,7 @@ long long abs_val(long long x) {
 }
 
 /**
- * calcWrite:   Calculates product, writes result to output file.
+ * calcWrite:   Calculates product of two integers, writes result to output file.
  * param arr:   Numbers that we want to determine their product
  * param bN:    The number of bits (max / min determiner)
  * param mxN:   The maximum bound
@@ -172,35 +184,34 @@ void calcWrite(long long *arr, int *bN, long long *mxN, long long *mnN, int *c) 
   int signTotal = 0;
 
   // Lets try something else
-  __int128_t prod = 1;
+  long long prod = 1;
   for (int i = 0; i != *c; i++) {
-    prod *= (__int128_t) arr[i];
+    prod *= arr[i];
     signTotal += ((arr[i] >> ((sizeof(long long) * 8)-1) &1));
   } // Determine product for the numbers
 
   // Sign bit of product
-  int sign3 = (((prod) >> 127) & 1);
+  int sign3 = (((prod) >> (*bN-1)) & 1);
 
   // Positive result, overflow risk
   if (signTotal % 2 == 0) {
     long long diff = abs_val(prod) - *mxN;
     long long is_a_greater = ~(diff >> (sizeof(long long) * 8 - 1)) & 1;
 
-    prod = (prod >> *bN) ? 
-      ((sign3 == 0) ? *mxN : prod)      // Check if there are bits passed the midway, overflow (multiplication overflowed, check).
-      : (is_a_greater) ? *mxN : prod;   // If this is not the case, check that the size is not bigger (magnitude is correct).
+    if ((sign3) || is_a_greater)
+      prod = *mxN;
 
   // Negative result, underflow risk
   } else {
-    long long a = abs_val(prod);
-    long long b = abs_val(*mnN);
-    long long diff = a - b;
+    long long diff = abs_val(prod) - abs_val(*mnN);
+    long long is_a_greater = ~(diff >> (sizeof(long long) * 8 - 1)) & 1;
 
-    long long is_a_smaller = diff >> (sizeof(long long) * 8 - 1) & 1;
-    
-    prod = (is_a_smaller) ? ((sign3) ? *mnN : prod) : *mnN;
+    if ((!sign3) || is_a_greater)
+      prod = *mnN;
   }
   
   // Put the product to the file
   fprintf(out, "%lld\n", (long long)prod);
+
+  return;
 }
